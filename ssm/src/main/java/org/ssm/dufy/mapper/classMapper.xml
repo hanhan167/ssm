@@ -1,0 +1,81 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="org.ssm.dufy.dao.ClassesDao">
+	
+	<resultMap type="org.ssm.dufy.entity.Classes" id="ClassResultMap">
+		<id property="id" column="c_id"/>
+		<result property="name" column="c_name"/>
+		<association property="teacher" javaType="org.ssm.dufy.entity.Teacher">
+			<id property="id" column="t_id"/>
+			<result property="name" column="t_name"/>
+		</association>
+		
+	</resultMap>
+	
+	<!-- 方式一 嵌套结果查询  一次查询  association 中无column属性  无select 嵌套查询 多了javaType关系 -->
+	<select id="getClass" parameterType="int" resultMap="ClassResultMap">
+		select * from class c,teacher t where c.teacher_id = t.t_id and c.c_id = #{id}
+	</select>
+	
+	
+	<!-- 方式二嵌套查询  分两次查询   用第一查询到的classes表中的字段 teacher_id 去作为第二次查询的条件 所以多了 column属性 和select -->
+	<select id="getClass2" parameterType="int" resultMap="ClassResultMap2">
+		select * from class c where c.c_id = #{id}
+	</select>
+	
+	<!-- 嵌套查询 返回类型一定要是 resultMap 否则无法外层查询无法接收到里层查询返回的对象 会返回为null -->
+	<select id="getTeacher" parameterType="int" resultMap="TeacherMap">
+		select * from teacher t where t.t_id = #{id}
+	</select>
+	
+	<resultMap type="org.ssm.dufy.entity.Teacher" id="TeacherMap">
+		<id property="id" column="t_id"/>
+		<result property="name" column="t_name"/>
+	</resultMap>
+	
+	<resultMap type="org.ssm.dufy.entity.Classes" id="ClassResultMap2">
+		<id property="id" column="c_id"/>
+		<result property="name" column="c_name"/>
+		<association property="teacher" column="teacher_id" select="getTeacher" />
+	</resultMap>
+	
+	
+	<!-- 一对多的 方式一  嵌套查询 -->
+	
+	<select id="getClass3" parameterType="int" resultMap="ClassResultMap3">
+		select * from class c,teacher t,student s where c.teacher_id = t.t_id and c.c_id = s.class_id
+		and c.c_id = #{id}
+	</select>
+	
+	<resultMap type="org.ssm.dufy.entity.Classes" id="ClassResultMap3">
+		<id property="id" column="c_id"/>
+		<result property="name" column="c_name"/>
+		<association property="teacher" javaType="org.ssm.dufy.entity.Teacher">
+			<id property="id" column="t_id"/>
+			<result property="name" column="t_name"/>
+		</association>
+		<collection property="students" ofType="org.ssm.dufy.entity.Student">
+			<id property="id" column="s_id"/>
+			<result property="name" column="s_name"/>
+		</collection>
+	</resultMap>
+	
+	<!-- 测试所有表的主键都为ID的情况   如果不给关联查询表的主键 字段取别名 那么就只能查询一条数据-->
+	<select id="getClass4" resultMap="ClassResultMap4">
+		select c.*,t.*,s.*,t.id as tid,s.id as classid from class c,teacher t,student s where c.teacher_id = t.id and c.id = s.class_id
+<!-- 		and c.id = #{id} -->
+	</select>
+	
+	<resultMap type="org.ssm.dufy.entity.Classes" id="ClassResultMap4">
+		<id property="id" column="id"/>
+		<result property="name" column="c_name"/>
+		<association property="teacher" javaType="org.ssm.dufy.entity.Teacher">
+			<id property="id" column="tid"/>
+			<result property="name" column="t_name"/>
+		</association>
+		<collection property="students" ofType="org.ssm.dufy.entity.Student">
+			<id property="id" column="classid"/>  <!-- 此处的id 是student表的主键id  因为现在修改了数据库的主键都为 id 所以要给字段取别名 否则只能查询出一条记录 -->
+			<result property="name" column="s_name"/>
+		</collection>
+	</resultMap>
+</mapper>
